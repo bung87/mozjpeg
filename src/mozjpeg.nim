@@ -1,21 +1,22 @@
 import os
-
+import sequtils, strutils
 when defined(macosx):
-  const mozjpeg = "/usr/local/opt/mozjpeg/lib/libjpeg.dylib"
-elif defined(linux) or defined(bsd):
-  const mozjpeg = "mozjpeg.so"
+  const mozjpeg = "/usr/local/opt/mozjpeg/lib/libjpeg.8.dylib"
+elif defined(linux):
+  const mozjpeg = "libmozjpeg.so"
 else:
-  const mozjpeg = "mozjpeg.dll"
+  const mozjpeg = "libmozjpeg.dll"
 
-# 
 {.compile: "mozjpeg/api.c",passc:"-DJPEG_LIB_VERSION=80 -DBITS_IN_JSAMPLE=8",passc:"-I" & currentSourcePath.parentDir() / "mozjpeg" / "mozjpeg-3.3.1",passL:mozjpeg.}
 
-proc optimizeJPG*(input_data: cstring,size:culong,quality:cint,fast_encoding:bool,output: cstring) {.importc:"optimizeJPG",header:"mozjpeg/api.h".}
+proc optimizeJPG*(infile: cstring,quality:cint,fast_encoding:bool,outfile: cstring) {.importc:"optimizeJPG",header:"mozjpeg/api.h".}
+
+proc optimizeJPG*(infile: string,quality:int,fast_encoding:bool,outfile: string) = 
+  ## It is recommended to keep the quality setting between 60-80 for optimum results.
+  optimizeJPG( absolutePath(infile), quality.cint,fast_encoding, outfile.cstring)
 
 when isMainModule:
-  var c = readFile("th.jpeg")
-  var o:cstring
-  echo c.len.culong
-  optimizeJPG(c.cstring,c.len.culong,100.cint,false,o)
-  echo $o
-  writeFile("th_out.jpeg", $o)
+  
+  let p = absolutePath "OIP.jpeg"
+  let output = absolutePath "OIP_out.jpeg"
+  optimizeJPG(p,75,false,output)
