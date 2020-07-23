@@ -1,21 +1,49 @@
 
-// #include "jversion.h"           /* for version message */
-// #include "jmorecfg.h"
-#include "cdjpeg.h"
-// #include "jpeglib.h"             /* Common decls for cjpeg/djpeg applications */
-// extern JSAMPLE *buffer;
-unsigned char* optimizeJPG(unsigned char* input_data,unsigned long input_data_size,int quality,boolean fast_encoding)
+
+#include "api.h"
+
+typedef struct _error_mgr {
+  struct jpeg_error_mgr pub;
+  jmp_buf jb;
+} error_mgr;
+
+static void error_emit_exception(j_common_ptr cinfo)
+{
+  error_mgr *myerr = (error_mgr *)cinfo->err;
+  longjmp(myerr->jb, 1);
+}
+
+
+GLOBAL(struct jpeg_error_mgr *)
+pymozjpeg_error(error_mgr *err) 
+{
+  jpeg_std_error((struct jpeg_error_mgr *)err);
+  err->pub.trace_level = 0;
+  err->pub.error_exit = error_emit_exception;
+
+  return (struct jpeg_error_mgr *)err;
+}
+
+void optimizeJPG(unsigned char* input_data,unsigned long input_data_size,int quality,int fast_encoding,unsigned char* outbuffer)
 {
 //   const unsigned char *input_data;
 //   unsigned long input_data_size;
 
   struct jpeg_compress_struct cinfo;
   struct jpeg_decompress_struct dinfo;
-//   error_mgr jerr;
-  unsigned char *outbuffer = NULL;
+  error_mgr jerr;
+  // unsigned char *outbuffer = NULL;
   unsigned long outsize = 0;
   JSAMPARRAY buffer;
   int row_stride;
+  dinfo.global_state = cinfo.global_state = 0;
+  dinfo.err = cinfo.err = pymozjpeg_error(&jerr);
+
+  if(setjmp(jerr.jb)) {
+    if (dinfo.global_state != 0)
+      jpeg_destroy_decompress(&dinfo);
+    return ;
+  }
 
   jpeg_create_decompress(&dinfo);
   jpeg_mem_src(&dinfo, input_data, input_data_size);
@@ -67,5 +95,4 @@ unsigned char* optimizeJPG(unsigned char* input_data,unsigned long input_data_si
   jpeg_finish_compress(&cinfo);
   jpeg_destroy_compress(&cinfo);
 
-  return outbuffer;
 }
