@@ -1,5 +1,5 @@
 import os
-import sequtils, strutils
+# import dynlib
 when defined(macosx):
   const mozjpeg = "/usr/local/opt/mozjpeg/lib/libjpeg.8.dylib"
 elif defined(linux):
@@ -7,6 +7,10 @@ elif defined(linux):
 else:
   const mozjpeg = "libmozjpeg.dll"
 
+# static:
+#   let lib = loadLib(mozjpeg)
+#   let ver = cast[cint](lib.symAddr("JPEG_LIB_VERSION"))
+  
 {.compile: "mozjpeg/api.c",passc:"-DJPEG_LIB_VERSION=80 -DBITS_IN_JSAMPLE=8",passc:"-I" & currentSourcePath.parentDir() / "mozjpeg" / "mozjpeg-3.3.1",passL:mozjpeg.}
 
 proc optimizeJPG*(infile: cstring,quality:cint,fast_encoding:bool,outfile: cstring) {.importc:"optimizeJPG",header:"mozjpeg/api.h".}
