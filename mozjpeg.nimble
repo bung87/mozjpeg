@@ -5,8 +5,8 @@ author        = "bung87"
 description   = "A new awesome nimble package"
 license       = "MIT"
 srcDir        = "src"
-
-
+installDirs   = @["mozjpeg/mozjpeg-3.3.1"]
+installExt = @["nim","c","h"]
 
 # Dependencies
 
